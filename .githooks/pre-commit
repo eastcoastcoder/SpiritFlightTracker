@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Pre-commit hook for Spirit Flight Tracker
+# This hook runs before each commit to ensure code quality
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if required files exist
+if [ ! -f "index.html" ]; then
+    echo "❌ Error: index.html not found"
+    exit 1
+fi
+
+if [ ! -f "app.js" ]; then
+    echo "❌ Error: app.js not found"
+    exit 1
+fi
+
+# Validate JavaScript syntax
+echo "✓ Checking JavaScript syntax..."
+for file in *.js; do
+    if [ -f "$file" ]; then
+        if command -v node &> /dev/null; then
+            if ! node -c "$file" 2>&1; then
+                echo "❌ Syntax error in $file"
+                exit 1
+            fi
+        fi
+    fi
+done
+
+# Check for debugging statements
+echo "✓ Checking for debugging statements..."
+if git diff --cached --name-only | grep -E '\.(js|html)$' | xargs grep -n "console.log" 2>/dev/null; then
+    echo "⚠️  Warning: console.log statements found in staged files"
+    echo "   Consider removing them before committing (or commit anyway if intentional)"
+    read -p "Continue with commit? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Check for TODO comments
+echo "✓ Checking for TODO comments..."
+if git diff --cached --name-only | grep -E '\.(js|html)$' | xargs grep -n "TODO\|FIXME" 2>/dev/null; then
+    echo "ℹ️  Info: TODO/FIXME comments found in staged files"
+fi
+
+# Validate HTML basic structure
+echo "✓ Validating HTML structure..."
+for file in *.html; do
+    if [ -f "$file" ] && git diff --cached --name-only | grep -q "^$file$"; then
+        if ! grep -q "<!DOCTYPE html>" "$file"; then
+            echo "⚠️  Warning: $file missing DOCTYPE declaration"
+        fi
+        if ! grep -q "<html" "$file"; then
+            echo "❌ Error: $file missing html tag"
+            exit 1
+        fi
+    fi
+done
+
+# Check file sizes
+echo "✓ Checking file sizes..."
+MAX_SIZE=2097152  # 2MB
+for file in $(git diff --cached --name-only); do
+    if [ -f "$file" ]; then
+        size=$(wc -c < "$file")
+        if [ $size -gt $MAX_SIZE ]; then
+            echo "❌ Error: $file is larger than 2MB ($size bytes)"
+            exit 1
+        fi
+    fi
+done
+
+echo "✅ All pre-commit checks passed!"
+exit 0

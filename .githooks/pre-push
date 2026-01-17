@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Pre-push hook for Spirit Flight Tracker
+# This hook runs before pushing to remote repository
+
+echo "🚀 Running pre-push checks..."
+
+# Get the remote name and URL
+remote="$1"
+url="$2"
+
+echo "Pushing to: $remote ($url)"
+
+# Run tests
+echo "✓ Running validation checks..."
+
+# Check all JavaScript files
+for file in *.js; do
+    if [ -f "$file" ]; then
+        if command -v node &> /dev/null; then
+            if ! node -c "$file" 2>&1; then
+                echo "❌ Syntax error in $file"
+                echo "Fix the errors before pushing"
+                exit 1
+            fi
+        fi
+    fi
+done
+
+# Check for large files
+echo "✓ Checking for large files..."
+MAX_SIZE=5242880  # 5MB
+large_files=$(find . -type f -size +${MAX_SIZE}c -not -path "./.git/*" 2>/dev/null)
+if [ ! -z "$large_files" ]; then
+    echo "⚠️  Warning: Large files detected:"
+    echo "$large_files"
+    read -p "Continue with push? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Check for sensitive information
+echo "✓ Checking for sensitive information..."
+sensitive_patterns="password|api_key|secret|token|private_key"
+if git diff origin/$(git branch --show-current) --name-only | xargs grep -iE "$sensitive_patterns" 2>/dev/null; then
+    echo "❌ Error: Potential sensitive information detected!"
+    echo "Review your changes and remove sensitive data before pushing"
+    exit 1
+fi
+
+# Verify README is up to date
+if [ -f "README.md" ]; then
+    echo "✓ README.md exists"
+else
+    echo "⚠️  Warning: README.md not found"
+fi
+
+echo "✅ All pre-push checks passed!"
+echo "🚀 Proceeding with push..."
+exit 0

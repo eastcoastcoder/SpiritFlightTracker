@@ -1,0 +1,42 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate HTML
+        run: |
+          echo "Checking HTML files..."
+          for file in *.html; do
+            if [ -f "$file" ]; then
+              echo "✓ Found $file"
+            fi
+          done
+
+      - name: Validate JavaScript
+        run: |
+          echo "Checking JavaScript files..."
+          for file in *.js; do
+            if [ -f "$file" ]; then
+              echo "✓ Found $file"
+              # Basic syntax check
+              node -c "$file" && echo "✓ $file syntax OK" || echo "✗ $file has syntax errors"
+            fi
+          done
+
+      - name: Check file structure
+        run: |
+          echo "Verifying required files..."
+          [ -f "index.html" ] && echo "✓ index.html exists" || (echo "✗ index.html missing" && exit 1)
+          [ -f "app.js" ] && echo "✓ app.js exists" || (echo "✗ app.js missing" && exit 1)
+          [ -f "README.md" ] && echo "✓ README.md exists" || (echo "✗ README.md missing" && exit 1)

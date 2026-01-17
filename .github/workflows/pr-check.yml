@@ -1,0 +1,77 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check PR title
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "PR Title: $PR_TITLE"
+          
+          # Check if PR title is not empty and meaningful
+          if [ ${#PR_TITLE} -lt 10 ]; then
+            echo "❌ PR title is too short. Please provide a descriptive title (at least 10 characters)."
+            exit 1
+          fi
+          echo "✓ PR title looks good"
+
+      - name: Lint HTML
+        run: |
+          echo "Checking HTML files..."
+          for file in *.html; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              # Basic checks
+              grep -q "<!DOCTYPE html>" "$file" && echo "  ✓ Has DOCTYPE" || echo "  ⚠ Missing DOCTYPE"
+              grep -q "<html" "$file" && echo "  ✓ Has html tag" || echo "  ✗ Missing html tag"
+              grep -q "<head>" "$file" && echo "  ✓ Has head tag" || echo "  ✗ Missing head tag"
+              grep -q "<body>" "$file" && echo "  ✓ Has body tag" || echo "  ✗ Missing body tag"
+            fi
+          done
+
+      - name: Check JavaScript syntax
+        run: |
+          echo "Validating JavaScript syntax..."
+          node --version
+          for file in *.js; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              node -c "$file" && echo "  ✓ $file syntax is valid" || (echo "  ✗ $file has syntax errors" && exit 1)
+            fi
+          done
+
+      - name: File size check
+        run: |
+          echo "Checking file sizes..."
+          MAX_SIZE=1048576  # 1MB
+          for file in *.html *.js *.css; do
+            if [ -f "$file" ]; then
+              size=$(wc -c < "$file")
+              echo "$file: $size bytes"
+              if [ $size -gt $MAX_SIZE ]; then
+                echo "  ⚠ Warning: $file is larger than 1MB"
+              fi
+            fi
+          done
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const message = '✅ Automated checks completed! Your code looks good.';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });

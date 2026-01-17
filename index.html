@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spirit Airlines Flight Tracker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #FFD100 0%, #FFA500 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      color: #FFD100;
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .status.loading {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .status.active {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .status.error {
+      background: #f44336;
+      color: white;
+    }
+
+    .flight-info {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: #666;
+      font-weight: 600;
+    }
+
+    .info-value {
+      color: #333;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FFD100 0%, #FFA500 100%);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .button {
+      width: 100%;
+      padding: 15px;
+      background: #FFD100;
+      border: none;
+      border-radius: 10px;
+      color: #333;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .button:hover {
+      background: #FFA500;
+    }
+
+    .button:disabled {
+      background: #e0e0e0;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+
+    .last-update {
+      text-align: center;
+      color: #999;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+
+    .demo-note {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #856404;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">✈️ Spirit Airlines</div>
+      <h1>Flight Tracker</h1>
+      <span class="status loading" id="status">Connecting...</span>
+    </div>
+
+    <div id="error-container"></div>
+
+    <div class="flight-info" id="flight-info">
+      <div class="info-row">
+        <span class="info-label">Flight Number:</span>
+        <span class="info-value" id="flight-number">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">From:</span>
+        <span class="info-value" id="origin">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">To:</span>
+        <span class="info-value" id="destination">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Altitude:</span>
+        <span class="info-value" id="altitude">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Ground Speed:</span>
+        <span class="info-value" id="speed">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Time Remaining:</span>
+        <span class="info-value" id="time-remaining">--</span>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width: 0%">0%</div>
+    </div>
+
+    <button class="button" id="refresh-btn" onclick="fetchFlightData()">Refresh</button>
+
+    <div class="last-update" id="last-update">Last updated: Never</div>
+
+    <div class="demo-note">
+      <strong>Note:</strong> This page attempts to connect to Spirit's inflight WiFi API endpoints.
+      It will only work when connected to Spirit's inflight WiFi network (SpiritWiFi).
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
