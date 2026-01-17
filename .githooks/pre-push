@@ -44,10 +44,26 @@ fi
 # Check for sensitive information
 echo "✓ Checking for sensitive information..."
 sensitive_patterns="password|api_key|secret|token|private_key"
-if git diff origin/$(git branch --show-current) --name-only | xargs grep -iE "$sensitive_patterns" 2>/dev/null; then
-    echo "❌ Error: Potential sensitive information detected!"
-    echo "Review your changes and remove sensitive data before pushing"
-    exit 1
+
+# Get current branch
+current_branch=$(git branch --show-current)
+
+# Check if remote branch exists
+if git rev-parse "origin/$current_branch" >/dev/null 2>&1; then
+    # Remote branch exists, compare against it
+    files_to_check=$(git diff origin/$current_branch --name-only)
+else
+    # First push - check all tracked files
+    files_to_check=$(git ls-files)
+fi
+
+# Check for sensitive information in files
+if [ ! -z "$files_to_check" ]; then
+    if echo "$files_to_check" | xargs grep -iE "$sensitive_patterns" 2>/dev/null; then
+        echo "❌ Error: Potential sensitive information detected!"
+        echo "Review your changes and remove sensitive data before pushing"
+        exit 1
+    fi
 fi
 
 # Verify README is up to date
