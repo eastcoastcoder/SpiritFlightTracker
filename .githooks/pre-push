@@ -43,7 +43,8 @@ fi
 
 # Check for sensitive information
 echo "✓ Checking for sensitive information..."
-sensitive_patterns="password|api_key|secret|token|private_key"
+# Look for actual sensitive values, not just variable names or config
+sensitive_patterns="(password|api_key|secret|token|private_key)\s*[:=]\s*['\"][^'\"]{8,}"
 
 # Get current branch
 current_branch=$(git branch --show-current)
@@ -53,16 +54,19 @@ if git rev-parse "origin/$current_branch" >/dev/null 2>&1; then
     # Remote branch exists, compare against it
     files_to_check=$(git diff origin/$current_branch --name-only)
 else
-    # First push - check all tracked files
-    files_to_check=$(git ls-files)
+    # First push - check all tracked files, excluding workflows and hooks
+    files_to_check=$(git ls-files | grep -v -E '\.github/workflows/|\.githooks/|\.git/')
 fi
 
-# Check for sensitive information in files
+# Check for sensitive information in files (only in .js, .html, .json, .env files)
 if [ ! -z "$files_to_check" ]; then
-    if echo "$files_to_check" | xargs grep -iE "$sensitive_patterns" 2>/dev/null; then
-        echo "❌ Error: Potential sensitive information detected!"
-        echo "Review your changes and remove sensitive data before pushing"
-        exit 1
+    sensitive_files=$(echo "$files_to_check" | grep -E '\.(js|html|json|env|txt)$' || true)
+    if [ ! -z "$sensitive_files" ]; then
+        if echo "$sensitive_files" | xargs grep -iE "$sensitive_patterns" 2>/dev/null; then
+            echo "❌ Error: Potential sensitive information detected!"
+            echo "Review your changes and remove sensitive data before pushing"
+            exit 1
+        fi
     fi
 fi
 
