@@ -4,7 +4,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spirit Airlines Flight Tracker</title>
+  <title>Airline Flight Tracker</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#FFD100">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Flight Tracker">
+  <meta name="description" content="Track your flight status on Spirit, American, and Delta airlines">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Favicon and Apple Touch Icons -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23FFD100'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40' fill='%23333'%3E✈️%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23FFD100'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='40' fill='%23333'%3E✈️%3C/text%3E%3C/svg%3E">
   <style>
     * {
       margin: 0;
@@ -20,6 +36,11 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
+    }
+
+    :root {
+      --primary-color: #FFD100;
+      --secondary-color: #FFA500;
     }
 
     .container {
@@ -113,7 +134,7 @@
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #FFD100 0%, #FFA500 100%);
+      background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
       transition: width 0.3s ease;
       display: flex;
       align-items: center;
@@ -126,18 +147,20 @@
     .button {
       width: 100%;
       padding: 15px;
-      background: #FFD100;
+      background: var(--primary-color);
       border: none;
       border-radius: 10px;
       color: #333;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s ease;
     }
 
     .button:hover {
-      background: #FFA500;
+      background: var(--secondary-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
 
     .button:disabled {
@@ -171,15 +194,123 @@
       font-size: 13px;
       color: #856404;
     }
+
+    .airline-selector {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .airline-selector label {
+      display: block;
+      color: #666;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .airline-selector select {
+      padding: 10px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      font-size: 16px;
+      color: #333;
+      cursor: pointer;
+      min-width: 200px;
+    }
+
+    .airline-selector select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .airline-selector select:hover {
+      border-color: var(--secondary-color);
+    }
+
+    .connectivity-message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-size: 14px;
+      text-align: center;
+      animation: slideIn 0.3s ease;
+    }
+
+    .connectivity-message.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .connectivity-message.warning {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+    }
+
+    .install-btn {
+      margin: 10px 0 !important;
+      background: var(--secondary-color) !important;
+      color: white !important;
+    }
+
+    .install-btn:hover {
+      background: var(--primary-color) !important;
+      color: #333 !important;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* PWA-specific styles */
+    @media (display-mode: standalone) {
+      body {
+        padding-top: 40px;
+        /* Account for status bar in standalone mode */
+      }
+
+      .container {
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+      }
+    }
+
+    /* iOS PWA styles */
+    @media (display-mode: standalone) and (max-width: 768px) {
+      .container {
+        border-radius: 0;
+        margin: 0;
+        min-height: 100vh;
+        padding: 20px 20px 40px 20px;
+      }
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">✈️ Spirit Airlines</div>
+      <div class="logo" id="airline-logo">✈️ Spirit Airlines</div>
       <h1>Flight Tracker</h1>
       <span class="status loading" id="status">Connecting...</span>
+    </div>
+
+    <div class="airline-selector">
+      <label for="airline-select">Select Airline:</label>
+      <select id="airline-select" onchange="switchAirline()">
+        <option value="spirit">Spirit Airlines</option>
+        <option value="american">American Airlines</option>
+        <option value="delta">Delta Air Lines</option>
+      </select>
     </div>
 
     <div id="error-container"></div>
@@ -220,8 +351,8 @@
     <div class="last-update" id="last-update">Last updated: Never</div>
 
     <div class="demo-note">
-      <strong>Note:</strong> This page attempts to connect to Spirit's inflight WiFi API endpoints.
-      It will only work when connected to Spirit's inflight WiFi network (SpiritWiFi).
+      <strong>Note:</strong> This page attempts to connect to the selected airline's inflight WiFi API endpoints.
+      It will only work when connected to the respective airline's inflight WiFi network.
     </div>
   </div>
 
