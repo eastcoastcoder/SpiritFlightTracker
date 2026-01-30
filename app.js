@@ -25,7 +25,7 @@ const AIRLINE_CONFIGS = {
     baseUrl: 'https://www.aainflight.com',
     endpoints: {
       flightInfo: '/api/flight/current',
-      flightStatus: '/api/flight/status',
+      flightStatus: '/api/v1/connectivity/intelsat/system-status', // Confirmed
       flightData: '/api/v1/flight-data',
       altFlightInfo: '/flight',
       altStatus: '/status',
@@ -366,12 +366,12 @@ function updateUI(data) {
 function extractFlightInfo(data) {
   // Handle different possible API response structures
   const info = {
-    flightNumber: data.flightNumber || data.flight_number || data.flight || null,
-    origin: data.origin || data.departure || data.from || null,
-    destination: data.destination || data.arrival || data.to || null,
-    altitude: formatAltitude(data.altitude || data.alt || null),
-    speed: formatSpeed(data.speed || data.groundSpeed || data.ground_speed || null),
-    timeRemaining: formatTime(data.timeRemaining || data.time_remaining || data.eta || null),
+    flightNumber: data.flight_info?.flight_no || data.flightNumber || data.flight_number || data.flight || null,
+    origin: data.flight_info?.departure_airport_iata || data.origin || data.departure || data.from || null,
+    destination: data.flight_info?.arrival_airport_iata || data.destination || data.arrival || data.to || null,
+    altitude: formatAltitude(data.positional_info?.above_sea_level_feet || data.altitude || data.alt || null),
+    speed: formatSpeed(data.positional_info?.horizontal_velocity_mph || data.speed || data.groundSpeed || data.ground_speed || null),
+    timeRemaining: formatTime(data.flight_info?.time_to_land_mins || data.timeRemaining || data.time_remaining || data.eta || null),
     progress: calculateProgress(data),
   };
 
@@ -380,6 +380,11 @@ function extractFlightInfo(data) {
 
 // Calculate flight progress percentage
 function calculateProgress(data) {
+  // AA
+  if (data.flight_info?.time_to_land_mins && data.flight_info?.total_flight_duration_mins) {
+    return (Number(data.flight_info?.time_to_land_mins) / Number(data.flight_info?.total_flight_duration_mins)) * 100;
+  }
+  
   if (data.progress !== undefined) {
     return Math.min(100, Math.max(0, data.progress));
   }
@@ -460,13 +465,69 @@ function showDemoData() {
       progress: 62,
     },
     american: {
-      flightNumber: 'AA 456',
-      origin: 'Dallas (DFW)',
-      destination: 'New York (JFK)',
-      altitude: 38000,
-      speed: 545,
-      timeRemaining: 87, // minutes
-      progress: 75,
+      "time_stamp": "2026-01-30T22:54:08.150Z",
+      "aircraft_info": {
+        "tail_no": "N818AW",
+        "airline_code": "AAL",
+        "aircraft_type": "A319",
+        "wap_type": "ACWAP",
+        "wap_model": "ACWAP_301_NON_PINSTRAPPED",
+        "system_type": "2KU",
+        "arinc_enabled": true,
+        "cl_enabled": true,
+        "sub_system_type": "FM_KANDU_FM_TAURUS"
+      },
+      "software_info": {
+        "acpu_version": "5.5.5",
+        "whitelist_version": "3.W.0",
+        "acpu_uptime": "00d;11h;35m"
+      },
+      "positional_info": {
+        "above_gnd_level_feet": "-129.31",
+        "latitude": "33.6678",
+        "longitude": "-78.9229",
+        "horizontal_velocity_mph": "11.794471",
+        "vertical_velocity_mph": "0.07954546",
+        "above_sea_level_feet": "-109.75001",
+        "source": "ARINC_DIRECT"
+      },
+      "flight_info": {
+        "flight_no": "AAL2911",
+        "departure_airport_icao": "KMYR",
+        "arrival_airport_icao": "KDFW",
+        "scheduled_departure_time": "2026-01-30T22:54:00.00Z",
+        "departure_timezone_offset_hrs": "-5.0",
+        "departure_airport_iata": "MYR",
+        "arrival_airport_iata": "DFW",
+        "departure_time": "2026-01-30T22:50:00.00Z",
+        "arrival_time": "2026-01-31T01:51:00.00Z",
+        "scheduled_arrival_time": "2026-01-31T01:55:00.00Z",
+        "time_to_land_mins": "180",
+        "arrival_timezone_offset_hrs": "-6.0",
+        "total_flight_duration_mins": "181"
+     },
+      "service_info": {
+        "flight_phase": "TAXI",
+        "link_state": "UP",
+        "tunnel_state": "UP",
+        "ifc_pax_service_state": "UP",
+        "pax_ssid_status": "UP",
+        "cas_ssid_status": "UP",
+        "country_code": "US",
+        "airport_code": "KMYR",
+        "link_type": "2KU",
+        "tunnel_type": "VTP",
+        "tm_link_state": "DOWN",
+        "ifc_cas_service_state": "UP",
+        "customer_portal_state": "UNKNOWN",
+        "captive_portal_enabled": true,
+        "current_link_status_code": "3001",
+        "current_link_status_description": "NORMAL_OPERATION",
+        "expected_link_status_code": "3000",
+        "expected_link_status_description": "NOT_AVAILABLE",
+        "expected_time_to_no_coverage_sec": "NA",
+        "expected_time_to_coverage_sec": "NA"
+      }
     },
     delta: {
       flightNumber: 'DL 789',
