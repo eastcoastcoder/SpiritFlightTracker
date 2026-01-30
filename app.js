@@ -24,11 +24,11 @@ const AIRLINE_CONFIGS = {
     logo: '🦅 American Airlines',
     baseUrl: 'https://www.aainflight.com',
     endpoints: {
-      flightInfo: '/api/flight/current',
+      // flightInfo: '/api/flight/current',
       flightStatus: '/api/v1/connectivity/intelsat/system-status', // Confirmed
-      flightData: '/api/v1/flight-data',
-      altFlightInfo: '/flight',
-      altStatus: '/status',
+      // flightData: '/api/v1/flight-data',
+      // altFlightInfo: '/flight',
+      // altStatus: '/status',
     },
     colors: {
       primary: '#CC0000',
@@ -300,9 +300,10 @@ async function fetchFlightData() {
           Accept: 'application/json',
         },
         // Allow CORS for testing
-        mode: 'cors',
-        credentials: 'omit',
+        // mode: 'cors',
+        // credentials: 'omit',
       });
+      console.log(response);
 
       if (response.ok) {
         const data = await response.json();
