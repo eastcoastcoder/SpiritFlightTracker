@@ -24,7 +24,7 @@ const AIRLINE_CONFIGS = {
     logo: '🦅 American Airlines',
     baseUrl: 'https://www.aainflight.com',
     endpoints: {
-      // flightInfo: '/api/flight/current',
+      flightInfo: '/api/v1/connectivity/viasat/flight', // Confirmed
       flightStatus: '/api/v1/connectivity/intelsat/system-status', // Confirmed
       // flightData: '/api/v1/flight-data',
       // altFlightInfo: '/flight',
@@ -282,12 +282,12 @@ async function fetchFlightData() {
 
   // Build endpoint URLs for the current airline
   const endpoints = [
-    `${config.baseUrl}${config.endpoints.flightInfo}`,
-    `${config.baseUrl}${config.endpoints.flightStatus}`,
-    `${config.baseUrl}${config.endpoints.flightData}`,
-    `${config.baseUrl}${config.endpoints.altFlightInfo}`,
-    `${config.baseUrl}${config.endpoints.altStatus}`,
-  ];
+    config.endpoints.flightInfo && `${config.baseUrl}${config.endpoints.flightInfo}`,
+    config.endpoints.flightStatus && `${config.baseUrl}${config.endpoints.flightStatus}`,
+    config.endpoints.flightData && `${config.baseUrl}${config.endpoints.flightData}`,
+    config.endpoints.altFlightInfo && `${config.baseUrl}${config.endpoints.altFlightInfo}`,
+    config.endpoints.altStatus && `${config.baseUrl}${config.endpoints.altStatus}`,
+  ].filter(d => d);
 
   let dataFetched = false;
 
@@ -384,6 +384,11 @@ function calculateProgress(data) {
   // AA
   if (data.flight_info?.time_to_land_mins && data.flight_info?.total_flight_duration_mins) {
     return (Number(data.flight_info?.time_to_land_mins) / Number(data.flight_info?.total_flight_duration_mins)) * 100;
+  }
+
+  if (data.timeToGo && data.flightDuration) {
+    const elapsed = data.flightDuration - data.timeToGo;
+    return (elapsed / data.duration) * 100;
   }
   
   if (data.progress !== undefined) {
